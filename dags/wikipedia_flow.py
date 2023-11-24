@@ -7,7 +7,7 @@ from airflow.operators.python import PythonOperator
 
 ################ pipeliness ########
 
-from pipelines.wikipedia_pipelines import extract_wikipedia_data
+from pipelines.wikipedia_pipelines import extract_wikipedia_data, transform_wikipedia_data
 
 ###########################################################
 
@@ -21,6 +21,7 @@ dag = DAG(
     catchup=False
 )
 
+#Extracting
 extract_data_from_wikipedia = PythonOperator(
     task_id="extract_data_from_wikipedia",
     python_callable=extract_wikipedia_data,
@@ -31,7 +32,12 @@ extract_data_from_wikipedia = PythonOperator(
 
 
 #Preprocessing
-
+transfrom_wikipedia_data = PythonOperator(
+    task_id = "extract_data_from_wikipedia",
+    provide_context = True,
+    python_callable = transform_wikipedia_data,
+    dag=dag
+)
 
 
 #Write

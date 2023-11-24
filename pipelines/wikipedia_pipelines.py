@@ -1,3 +1,7 @@
+import json
+
+NO_IMAGE = 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/No-image-available.png/480px-No-image-available.png'
+
 def get_wikipedia_page(url):
     import requests
 
@@ -60,6 +64,20 @@ def extract_wikipedia_data(**kwargs):
         }
         data.append(values)
 
-    data_df = pd.DataFrame(data)
-    data_df.to_csv("data/output.csv", index=False)
+    json_rows = json.dumps(data)
+    kwargs['ti'].xcom_push(key='rows', value=json_rows)
+
     return data
+
+def transform_wikipedia_data(**kwargs):
+    import pandas as pd
+
+    data = kwargs['ti'].xcom_pull(key='rows', task_ids='extract_data_from_wikipedia')
+
+    data = json.loads(data)
+
+    stadiums_df = pd.DataFrame(data)
+
+    stadiums_df['images'] = stadiums_df['images'].apply(lambda x: x if x not in ['NO_IMAGE', '', None] else NO_IMAGE)
+
+
