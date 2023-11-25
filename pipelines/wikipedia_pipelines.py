@@ -1,6 +1,5 @@
 import json
-from geopy import Nominatim
-
+from geopy.geocoders import Photon
 NO_IMAGE = 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/No-image-available.png/480px-No-image-available.png'
 
 def get_wikipedia_page(url):
@@ -30,21 +29,16 @@ def get_wikipedia_data(html):
 def clean_text(text):
     text = str(text).strip()
     text = text.replace('&nbsp', '')
-    if text.find(' ♦', ):
+    if text.find(' ♦'):
         text = text.split(' ♦')[0]
     if text.find('[') != -1:
         text = text.split('[')[0]
     if text.find(' (formerly)') != -1:
         text = text.split(' (formerly)')[0]
-    if text == '\n':
-        return ""
 
     return text.replace('\n', '')
 
-
 def extract_wikipedia_data(**kwargs):
-    import pandas as pd
-
     url = kwargs['url']
     html = get_wikipedia_page(url)
     rows = get_wikipedia_data(html)
@@ -56,7 +50,7 @@ def extract_wikipedia_data(**kwargs):
         values = {
             'rank': i,
             'stadium': clean_text(tds[0].text),
-            'capacity': clean_text(tds[1].text),
+            'capacity': clean_text(tds[1].text).replace(',', '').replace('.', ''),
             'region': clean_text(tds[2].text),
             'country': clean_text(tds[3].text),
             'city': clean_text(tds[4].text),
@@ -71,8 +65,8 @@ def extract_wikipedia_data(**kwargs):
     return "OK"
 
 def get_lat_long(country, city):
-    geolocator = Nominatim(user_agent='geoapiExercises')
-    location = geolocator.geocode(f'{city}, {country}')
+    geolocator = Photon(user_agent='geoapiExercises')
+    location = geolocator.geocode(f'{city}, {country}', timeout=10)
 
     if location:
         return location.latitude, location.longitude
@@ -89,6 +83,7 @@ def transform_wikipedia_data(**kwargs):
     stadiums_df = pd.DataFrame(data)
     stadiums_df['location'] = stadiums_df.apply(lambda x: get_lat_long(x['country'], x['stadium']), axis=1)
     stadiums_df['images'] = stadiums_df['images'].apply(lambda x: x if x not in ['NO_IMAGE', '', None] else NO_IMAGE)
+    stadiums_df['capacity'] = stadiums_df['capacity'].astype(int)
 
     # handle the duplicates
     duplicates = stadiums_df[stadiums_df.duplicated(['location'])]
@@ -99,6 +94,21 @@ def transform_wikipedia_data(**kwargs):
     kwargs['ti'].xcom_push(key='rows', value=stadiums_df.to_json())
 
     return "OK"
+
+def write_wikipedia_data(**kwargs):
+    from datetime import datetime
+    import pandas as pd
+
+    data = kwargs['ti'].xcom_pull(key='rows', task_ids='transform_wikipedia_data')
+
+    data = json.loads(data)
+    data = pd.DataFrame(data)
+
+    file_name = ('stadium_cleaned_' + str(datetime.now().date())
+                 + "_" + str(datetime.now().time()).replace(":", "_") + '.csv')
+
+    data.to_csv('data/' + file_name, index=False)
+
 
 
 

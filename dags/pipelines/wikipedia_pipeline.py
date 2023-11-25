@@ -1,3 +1,4 @@
+##### NOT USED BECAUSE WILL USED THE PIPELINES FOLDER
 def get_wikipedia_page(url):
     import requests
 
