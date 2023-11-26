@@ -107,7 +107,15 @@ def write_wikipedia_data(**kwargs):
     file_name = ('stadium_cleaned_' + str(datetime.now().date())
                  + "_" + str(datetime.now().time()).replace(":", "_") + '.csv')
 
-    data.to_csv('data/' + file_name, index=False)
+    #data.to_csv('data/' + file_name, index=False)
+
+    data.to_csv('abfss://harizfootballdataeng@harizfootballdataeng.dfs.core.windows.net/data/' + file_name,
+                storage_options={
+                    'account_key' : 'BAzEpubtYvjGl6ruhmCZWn/rvK2qXPllbpb9NGY5f3oEX9xNVdWfJLUb4fD8zKvYdUnRhck6QuNM+AStAsqZAg=='
+                })
+    # BAzEpubtYvjGl6ruhmCZWn/rvK2qXPllbpb9NGY5f3oEX9xNVdWfJLUb4fD8zKvYdUnRhck6QuNM+AStAsqZAg==
+
+
 
 
 
